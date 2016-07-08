@@ -7,9 +7,6 @@
 #include <arpa/inet.h>
 #include <string.h>
 
-#define PROMISCUOUS 1
-#define NONPROMISCUOUS 0
-
 void callback(u_char *useless, const struct pcap_pkthdr* pkthdr, const u_char* packet)
 {
     static int count = 1;
@@ -35,7 +32,7 @@ void callback(u_char *useless, const struct pcap_pkthdr* pkthdr, const u_char* p
 
     ip_protocol = *(packet+11);
 
-    Srcip.s_addr= *((long*)(packet+14));
+    Srcip.s_addr = *((long*)(packet+14));
 
     Dstip.s_addr = *((long*)(packet+18));
 
