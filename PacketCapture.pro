@@ -5,3 +5,4 @@ CONFIG -= qt
 
 SOURCES += main.c
 LIBS += -lpcap
+LIBS += -L/usr/include/libnet.h

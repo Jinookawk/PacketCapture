@@ -1,9 +1,9 @@
 #include <pcap.h>
+#include <libnet.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <string.h>
 
@@ -11,42 +11,25 @@ void callback(u_char *useless, const struct pcap_pkthdr* pkthdr, const u_char* p
 {
     static int count = 1;
 
-    unsigned char Dstmac[6];
-    unsigned char Srcmac[6];
-    unsigned short ether_type;
+    struct libnet_ethernet_hdr *etherhdr;
+    struct libnet_ipv4_hdr *iphdr;
+    struct libnet_tcp_hdr *tcphdr;
 
-    struct in_addr Srcip;
-    struct in_addr Dstip;
-    unsigned char ip_protocol;
+    etherhdr = (struct libnet_ethernet_hdr*)(packet);
+    packet += sizeof(struct libnet_ethernet_hdr);
 
-    unsigned short Srcport;
-    unsigned short Dstport;
+    iphdr = (struct libnet_ipv4_hdr*)(packet);
+    packet += sizeof(struct libnet_ipv4_hdr);
 
-    for(int i=0;i<6;i++)
-        Dstmac[i]=*(packet++);
-
-    for(int i=0;i<6;i++)
-        Srcmac[i]=*(packet++);
-
-    ether_type = ntohs(*((short*)(packet)));
-
-    ip_protocol = *(packet+11);
-
-    Srcip.s_addr = *((long*)(packet+14));
-
-    Dstip.s_addr = *((long*)(packet+18));
-
-    Srcport = ntohs(*((short*)(packet+22)));
-
-    Dstport = ntohs(*((short*)(packet+24)));
+    tcphdr = (struct libnet_tcp_hdr*)(packet);
 
     printf("\nPacket number [%d], length of this packet is: %d\n", count++, pkthdr->len);
 
-    if (ether_type == 0x800){
-        if (ip_protocol == 0x6){
+    if (ntohs(etherhdr->ether_type) == ETHERTYPE_IP){
+        if (iphdr->ip_p == 0x6){
             printf("Src MAC Address : ");
             for (int i = 0; i < 6; i++){
-                printf("%02X", Srcmac[i]);
+                printf("%02X", etherhdr->ether_shost[i]);
                 if(i == 5)
                     printf("\n");
                 else
@@ -54,16 +37,16 @@ void callback(u_char *useless, const struct pcap_pkthdr* pkthdr, const u_char* p
             }
             printf("Dst MAC Address : ");
             for (int i = 0; i < 6; i++){
-                printf("%02X", Dstmac[i]);
+                printf("%02X", etherhdr->ether_dhost[i]);
                 if(i == 5)
                     printf("\n");
                 else
                     printf(":");
             }
-            printf("Src IP Address : %s\n", inet_ntoa(Srcip));
-            printf("Dst IP Address : %s\n", inet_ntoa(Dstip));
-            printf("Src Port : %d\n", Srcport);
-            printf("Dst Port : %d\n", Dstport);
+            printf("Src IP Address : %s\n", inet_ntoa(iphdr->ip_src));
+            printf("Dst IP Address : %s\n", inet_ntoa(iphdr->ip_dst));
+            printf("Src Port : %d\n", ntohs(tcphdr->th_sport));
+            printf("Dst Port : %d\n", ntohs(tcphdr->th_dport));
         }
         else
             printf("NOT TCP Packet\n");
