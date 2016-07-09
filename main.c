@@ -15,18 +15,22 @@ void callback(u_char *useless, const struct pcap_pkthdr* pkthdr, const u_char* p
     struct libnet_ipv4_hdr *iphdr;
     struct libnet_tcp_hdr *tcphdr;
 
+    u_int8_t iphdr_size;
+
     etherhdr = (struct libnet_ethernet_hdr*)(packet);
     packet += sizeof(struct libnet_ethernet_hdr);
 
     iphdr = (struct libnet_ipv4_hdr*)(packet);
-    packet += sizeof(struct libnet_ipv4_hdr);
+    iphdr_size = *(u_int8_t*)iphdr;
+    iphdr_size = (iphdr_size & 15) * 4;
+    packet += iphdr_size;
 
     tcphdr = (struct libnet_tcp_hdr*)(packet);
 
     printf("\nPacket number [%d], length of this packet is: %d\n", count++, pkthdr->len);
 
     if (ntohs(etherhdr->ether_type) == ETHERTYPE_IP){
-        if (iphdr->ip_p == 0x6){
+        if (iphdr->ip_p == IPPROTO_TCP){
             printf("Src MAC Address : ");
             for (int i = 0; i < 6; i++){
                 printf("%02X", etherhdr->ether_shost[i]);
